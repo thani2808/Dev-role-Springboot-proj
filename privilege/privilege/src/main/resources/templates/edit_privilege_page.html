@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en-us" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Edit Privilege</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <form method="post" action="/update" th:object="${privilegeToEdit}">
+        <!-- CSRF Token -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <!-- Hidden input for privilegeId -->
+        <input type="hidden" th:field="*{privilegeId}" />
+
+        <!-- privilege Name Field -->
+        <div>
+            <label for="privilegeName">Privilege Name:</label>
+            <input 
+                type="text" 
+                id="privilegeName" 
+                th:field="*{privilegeName}" 
+                placeholder="privilegeName" 
+                readonly
+                pattern="[a-zA-Z0-9]*" 
+                title="Privilegename must contain only letters and numbers."
+            />
+			
+			<!-- Role Dropdown -->
+			<label for="roleId">Select a Role</label>
+							<select id="roleId" name="roleId">
+							    <option value="" disabled selected>Select a role</option>
+							    
+								<option th:each="role : ${privilegeRoles}"
+								            th:value="${role.roleId}"
+								            th:text="${role.roleName}"
+								            th:selected="${privilegeToEdit.roleId == role.roleId}">
+								    </option>
+							</select>
+            <!-- Error message for privilegeName -->
+            <div th:if="${#fields.hasErrors('privilegeName')}" style="color: red;">
+                <p th:errors="*{privilegeName}"></p>
+            </div>
+        </div>
+		
+		<!-- Select dropdown for Status -->
+					<label for="status">Status:</label>
+			        <select id="status" name="status" th:field="*{status}">
+			            <option value="-1" disabled>---Select A Privilege Status---</option>
+			            <option th:value="0" th:text="'Inactive'" 
+			                    th:selected="${privilegeToEdit.status == 0}">Inactive
+			            </option>
+			            <option th:value="1" th:text="'Active'" 
+			                    th:selected="${privilegeToEdit.status == 1}">Active
+			            </option>
+			        </select>
+
+        <!-- Submit Button -->
+        <input type="submit" value="Edit">
+    </form>
+</body>
+</html>

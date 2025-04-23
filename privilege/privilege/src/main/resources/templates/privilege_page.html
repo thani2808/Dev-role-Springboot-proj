@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en-us" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Privilege</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+<table>
+  <tr>
+    <th>PrivilegeId</th>
+    <th>PrivilegeName</th>
+	<th>Status</th>
+	<th>RoleId</th>
+    <th>Actions</th>
+  </tr>
+  <th:block th:each="privilege : ${privilegeList}">
+    <tr>
+      <td th:text="${privilege.privilegeId}"></td>
+      <td th:text="${privilege.privilegeName}"></td>
+	  <td th:text="${privilege.status} ? 'Active' : 'Inactive'"></td>
+	  <td th:text="${privilege.roleId}"></td>
+      <td>
+        <a th:href="@{|/edit/${privilege.privilegeId}|}" class="btn">Edit</a>
+        <a th:href="@{|/delete/${privilege.privilegeId}|}" class="btn btn-danger">Delete</a>
+      </td>
+    </tr>
+  </th:block>
+</table>
+<a href="/create">Add new privilege</a>
+</body>
+</html>
