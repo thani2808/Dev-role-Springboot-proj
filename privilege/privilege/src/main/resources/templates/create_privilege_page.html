@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en-us" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Create Privilege</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <h1>Create New Privilege</h1>
+    <form method="post" th:action="@{/addprivilege}" th:object="${newPrivilege}">
+        <!-- CSRF Token -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <input type="hidden" th:field="*{privilegeId}" />
+		<input type="hidden" th:if="${newPrivilege}" th:field="*{privilegeId}" />
+        
+        <div>
+            <label for="privilegeName">Privilege Name:</label>
+            <input 
+                type="text" 
+                id="privilegeName"
+                th:field="*{privilegeName}" 
+                minlength="3" 
+                maxlength="15" 
+                required 
+                placeholder="PrivilegeName" 
+                pattern="[a-zA-Z0-9]*" 
+                title="Privilegename must contain only letters and numbers." 
+            />
+			
+			<!-- Role Dropdown -->
+			<label for="roleId">Select a Role</label>
+			<select id="roleId" th:field="*{roleId}">
+			    <option value="" disabled selected>Select a role</option>
+			    
+			    <!-- Check if list is not empty -->
+			    <option th:each="role : ${privilegeRoles}" 
+			            th:value="${role.roleId}" 
+			            th:text="${role.roleName}">
+			    </option>
+			</select>
+
+			<!-- Show error message if no roles available -->
+			<p th:if="${#lists.isEmpty(privilegeRoles)}" style="color: red;">
+			    No roles available. Please create roles first.
+			</p>
+						
+            <!-- Error message for privilegeName -->
+            <span th:if="${#fields.hasErrors('privilegeName')}" style="color: red;" th:errors="*{privilegeName}"></span>
+        </div>
+        
+        <input type="submit" value="Save">
+    </form>
+</body>
+</html>
