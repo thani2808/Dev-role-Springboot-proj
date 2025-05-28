@@ -106,51 +106,9 @@
 			<optional>true</optional>
 		</dependency>
 		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>org.hibernate.orm</groupId>
-		    <artifactId>hibernate-core</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-		    <groupId>org.cache2k</groupId>
-		    <artifactId>cache2k-spring</artifactId>
-		    <version>2.6.0.Final</version> <!-- Adjust version accordingly -->
-		</dependency>
-		<dependency>
-		    <groupId>org.cache2k</groupId>
-		    <artifactId>cache2k-micrometer</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>com.github.ben-manes.caffeine</groupId>
-		    <artifactId>caffeine</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>com.hazelcast</groupId>
-		    <artifactId>hazelcast-spring</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>javax.cache</groupId>
-		    <artifactId>cache-api</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-		<dependency>
-		    <groupId>com.datastax.oss</groupId>
-		    <artifactId>java-driver-core</artifactId>
-		    <version>4.17.0</version> <!-- or latest stable -->
-		</dependency>
-		<dependency>
-		    <groupId>org.springframework.boot</groupId>
-		    <artifactId>spring-boot-starter-data-cassandra</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>
