@@ -36,6 +36,7 @@ pipeline {
           env.DOCKER_PORT = envVars.DOCKER_PORT
           env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
           env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
+          env.GIT_URL = envVars.GIT_URL // Optional if used later
         }
       }
     }
