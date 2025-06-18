@@ -10,11 +10,8 @@ pipeline {
   }
 
   environment {
-    // These will be populated from EnvLoader in the shared library:
-    // git@github.com:thani2808/common-repository-new.git
-    DOCKERHUB_USERNAME = 'thanigai2808'
-    GIT_CREDENTIALS_ID = 'private-key-jenkins'
-
+    DOCKERHUB_USERNAME = ''
+    GIT_CREDENTIALS_ID = ''
     TARGET_REPO = ''
     TARGET_BRANCH = ''
     APP_TYPE = ''
@@ -32,7 +29,11 @@ pipeline {
           def envLoader = new EnvLoader(this)
           def envVars = envLoader.load()
 
-          // Assign values imported from the shared GitHub repository
+          env.APP_TYPE = envVars.APP_TYPE
+          env.IMAGE_NAME = envVars.IMAGE_NAME
+          env.CONTAINER_NAME = envVars.CONTAINER_NAME
+          env.HOST_PORT = envVars.HOST_PORT
+          env.DOCKER_PORT = envVars.DOCKER_PORT
           env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
           env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
         }
@@ -61,15 +62,7 @@ pipeline {
 
     stage('Initialize Configuration') {
       steps {
-        script {
-          def config = new InitEnv(this).initialize()
-
-          env.APP_TYPE = config.APP_TYPE
-          env.IMAGE_NAME = config.IMAGE_NAME
-          env.CONTAINER_NAME = config.CONTAINER_NAME
-          env.HOST_PORT = config.HOST_PORT
-          env.DOCKER_PORT = config.DOCKER_PORT
-        }
+        echo "✅ Configuration initialized: ${env.CONTAINER_NAME}, ${env.HOST_PORT}, ${env.APP_TYPE}"
       }
     }
 
