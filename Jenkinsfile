@@ -1,4 +1,4 @@
-@Library('common-repository-new') _
+@Library('common-repository-new@feature') _
 import org.example.*
 
 pipeline {
@@ -12,8 +12,8 @@ pipeline {
   environment {
     // These will be populated from EnvLoader in the shared library:
     // git@github.com:thani2808/common-repository-new.git
-    DOCKERHUB_USERNAME = ''       // Loaded from shared lib
-    GIT_CREDENTIALS_ID = ''       // Loaded from shared lib
+    DOCKERHUB_USERNAME = 'thanigai2808'
+    GIT_CREDENTIALS_ID = 'private-key-jenkins'
 
     TARGET_REPO = ''
     TARGET_BRANCH = ''
