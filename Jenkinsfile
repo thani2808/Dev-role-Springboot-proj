@@ -1,21 +1,30 @@
+@Library('common-repository-new') _
+import org.example.*
+
 pipeline {
   agent any
 
-  stages {
+  environment {
+    // Will be set in 'Load Shared Logic & Env'
+    DOCKERHUB_USERNAME = ''
+    GIT_CREDENTIALS_ID = ''
+    TARGET_REPO = ''
+    TARGET_BRANCH = ''
+    APP_TYPE = ''
+    IMAGE_NAME = ''
+    CONTAINER_NAME = ''
+    HOST_PORT = ''
+    DOCKER_PORT = ''
+  }
 
-    stage('Clone Shared Library') {
-      steps {
-        dir('shared-lib') {
-          git branch: 'feature', url: 'git@github.com:thani2808/common-repository-new.git', credentialsId: 'private-key-jenkins'
-        }
-      }
-    }
+  stages {
 
     stage('Load Shared Logic & Env') {
       steps {
         script {
-          def envLoader = new org.example.EnvLoader(this)
+          def envLoader = new EnvLoader(this)
           def envVars = envLoader.load()
+
           env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
           env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
         }
@@ -25,7 +34,7 @@ pipeline {
     stage('Clean Workspace') {
       steps {
         script {
-          new org.example.WorkspaceCleaner(this).clean()
+          new WorkspaceCleaner(this).clean()
         }
       }
     }
@@ -33,8 +42,9 @@ pipeline {
     stage('Checkout Application Repo') {
       steps {
         script {
-          def checkout = new org.example.RepoCheckout(this)
+          def checkout = new RepoCheckout(this)
           def repoInfo = checkout.checkout(env.GIT_CREDENTIALS_ID)
+
           env.TARGET_REPO = repoInfo.repo
           env.TARGET_BRANCH = repoInfo.branch
         }
@@ -44,7 +54,8 @@ pipeline {
     stage('Initialize Configuration') {
       steps {
         script {
-          def config = new org.example.EnvLoader(this).loadAppConfig(env.TARGET_REPO)
+          def config = new EnvLoader(this).loadAppConfig(env.TARGET_REPO)
+
           env.APP_TYPE = config.APP_TYPE
           env.IMAGE_NAME = config.IMAGE_NAME
           env.CONTAINER_NAME = config.CONTAINER_NAME
@@ -57,7 +68,7 @@ pipeline {
     stage('Build Application') {
       steps {
         script {
-          new org.example.AppBuilder(this)
+          new AppBuilder(this)
             .build(env.APP_TYPE, env.IMAGE_NAME)
         }
       }
@@ -66,7 +77,7 @@ pipeline {
     stage('Run Docker Container') {
       steps {
         script {
-          new org.example.ContainerRunner(this)
+          new ContainerRunner(this)
             .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
         }
       }
@@ -75,7 +86,7 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
-          new org.example.HealthCheckRunner(this)
+          new HealthCheckRunner(this)
             .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
         }
       }
