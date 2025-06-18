@@ -4,10 +4,17 @@ import org.example.*
 pipeline {
   agent any
 
+  parameters {
+    string(name: 'REPO_NAME', defaultValue: '', description: 'Repository Name to checkout')
+    string(name: 'REPO_BRANCH', defaultValue: 'main', description: 'Branch to checkout')
+  }
+
   environment {
-    // Will be set in 'Load Shared Logic & Env'
-    DOCKERHUB_USERNAME = ''
-    GIT_CREDENTIALS_ID = ''
+    // These will be populated from EnvLoader in the shared library:
+    // git@github.com:thani2808/common-repository-new.git
+    DOCKERHUB_USERNAME = ''       // Loaded from shared lib
+    GIT_CREDENTIALS_ID = ''       // Loaded from shared lib
+
     TARGET_REPO = ''
     TARGET_BRANCH = ''
     APP_TYPE = ''
@@ -25,6 +32,7 @@ pipeline {
           def envLoader = new EnvLoader(this)
           def envVars = envLoader.load()
 
+          // Assign values imported from the shared GitHub repository
           env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
           env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
         }
@@ -34,16 +42,16 @@ pipeline {
     stage('Clean Workspace') {
       steps {
         script {
-          new WorkspaceCleaner(this).clean()
+          new CleanWorkspace(this).clean()
         }
       }
     }
 
-    stage('Checkout Application Repo') {
+    stage('Checkout Repo') {
       steps {
         script {
-          def checkout = new RepoCheckout(this)
-          def repoInfo = checkout.checkout(env.GIT_CREDENTIALS_ID)
+          def checkout = new CheckoutTargetRepoImpl(this)
+          def repoInfo = checkout.checkout(params.REPO_NAME, params.REPO_BRANCH)
 
           env.TARGET_REPO = repoInfo.repo
           env.TARGET_BRANCH = repoInfo.branch
@@ -54,7 +62,7 @@ pipeline {
     stage('Initialize Configuration') {
       steps {
         script {
-          def config = new EnvLoader(this).loadAppConfig(env.TARGET_REPO)
+          def config = new InitEnv(this).initialize()
 
           env.APP_TYPE = config.APP_TYPE
           env.IMAGE_NAME = config.IMAGE_NAME
@@ -68,16 +76,16 @@ pipeline {
     stage('Build Application') {
       steps {
         script {
-          new AppBuilder(this)
+          new ApplicationBuilder(this)
             .build(env.APP_TYPE, env.IMAGE_NAME)
         }
       }
     }
 
-    stage('Run Docker Container') {
+    stage('Run Container') {
       steps {
         script {
-          new ContainerRunner(this)
+          new RunContainer(this)
             .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
         }
       }
@@ -86,15 +94,15 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
-          new HealthCheckRunner(this)
+          new HealthCheck(this)
             .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
         }
       }
     }
 
-    stage('Deployment Success') {
+    stage('Success') {
       steps {
-        echo "✅ Deployment successful for ${env.TARGET_REPO} [${env.TARGET_BRANCH}]"
+        echo "🎉 Deployment successful for ${env.TARGET_REPO} [${env.TARGET_BRANCH}]"
       }
     }
   }
