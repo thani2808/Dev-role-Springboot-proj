@@ -1,81 +1,99 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        IMAGE_NAME = "role-app"
-        CONTAINER_NAME = "role-container"      // corrected to match usage below
-        APP_PORT = "8085"        // Container app port
-        HOST_PORT = "8081"       // Mapped host port for app
-        EUREKA_PORT = "8761"     // Eureka server port
+  stages {
+
+    stage('Clone Shared Library') {
+      steps {
+        dir('shared-lib') {
+          git branch: 'feature', url: 'git@github.com:thani2808/common-repository-new.git', credentialsId: 'private-key-jenkins'
+        }
+      }
     }
 
-    stages {
-        stage('Clone the Repo') {
-            steps {
-                echo 'Cloning the repository...'
-                deleteDir()
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/feature']],
-                    userRemoteConfigs: [[
-                        url: 'git@github.com:thani2808/Dev-role-Springboot-proj.git',
-                        credentialsId: 'private-key-jenkins'
-                    ]]
-                ])
-            }
+    stage('Load Shared Logic & Env') {
+      steps {
+        script {
+          def envLoader = new org.example.EnvLoader(this)
+          def envVars = envLoader.load()
+          env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
+          env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
         }
-
-        stage('Build JAR') {
-            steps {
-                dir('role/role') {
-                    bat 'mvn clean package -DskipTests'
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                dir('role/role') {
-                    script {
-                        if (!fileExists('Dockerfile')) {
-                            error "Dockerfile not found!"
-                        }
-                    }
-                    bat "docker build -t ${IMAGE_NAME} ."
-                }
-            }
-        }
-
-        stage('Stop and Remove Old Container') {
-            steps {
-                script {
-                    bat """
-                        docker stop ${CONTAINER_NAME} || exit 0
-                        docker rm ${CONTAINER_NAME} || exit 0
-                    """
-                }
-            }
-        }
-
-        stage('Run Docker Container') {
-            steps {
-                bat "docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:${APP_PORT} ${IMAGE_NAME}"
-            }
-        }
-
-        stage('Success Confirmation') {
-            steps {
-                echo '✅ Application has been deployed successfully via Docker!'
-            }
-        }
+      }
     }
 
-    post {
-        failure {
-            echo '❌ Pipeline failed. Check the logs for details.'
+    stage('Clean Workspace') {
+      steps {
+        script {
+          new org.example.WorkspaceCleaner(this).clean()
         }
-        always {
-            echo 'Pipeline execution finished.'
-        }
+      }
     }
+
+    stage('Checkout Application Repo') {
+      steps {
+        script {
+          def checkout = new org.example.RepoCheckout(this)
+          def repoInfo = checkout.checkout(env.GIT_CREDENTIALS_ID)
+          env.TARGET_REPO = repoInfo.repo
+          env.TARGET_BRANCH = repoInfo.branch
+        }
+      }
+    }
+
+    stage('Initialize Configuration') {
+      steps {
+        script {
+          def config = new org.example.EnvLoader(this).loadAppConfig(env.TARGET_REPO)
+          env.APP_TYPE = config.APP_TYPE
+          env.IMAGE_NAME = config.IMAGE_NAME
+          env.CONTAINER_NAME = config.CONTAINER_NAME
+          env.HOST_PORT = config.HOST_PORT
+          env.DOCKER_PORT = config.DOCKER_PORT
+        }
+      }
+    }
+
+    stage('Build Application') {
+      steps {
+        script {
+          new org.example.AppBuilder(this)
+            .build(env.APP_TYPE, env.IMAGE_NAME)
+        }
+      }
+    }
+
+    stage('Run Docker Container') {
+      steps {
+        script {
+          new org.example.ContainerRunner(this)
+            .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
+        }
+      }
+    }
+
+    stage('Health Check') {
+      steps {
+        script {
+          new org.example.HealthCheckRunner(this)
+            .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
+        }
+      }
+    }
+
+    stage('Deployment Success') {
+      steps {
+        echo "✅ Deployment successful for ${env.TARGET_REPO} [${env.TARGET_BRANCH}]"
+      }
+    }
+  }
+
+  post {
+    failure {
+      echo '❌ Deployment failed. Check logs.'
+    }
+    always {
+      echo '🎯 Pipeline execution completed.'
+    }
+  }
 }
