@@ -26,7 +26,10 @@ pipeline {
       steps {
         script {
           def envList = new EnvironmentInitializer(this).initialize()
-          env.ENV_LIST = envList.join('\n') // Store for later withEnv use
+          if (!envList || envList.isEmpty()) {
+            error "❌ Failed to load environment variables from EnvironmentInitializer"
+          }
+          env.ENV_LIST = envList.join('\n')
         }
       }
     }
@@ -44,7 +47,6 @@ pipeline {
         script {
           def checkout = new CheckoutTargetRepoImpl(this)
           def repoInfo = checkout.checkout(params.REPO_NAME, params.REPO_BRANCH)
-
           env.TARGET_REPO = repoInfo.repo
           env.TARGET_BRANCH = repoInfo.branch
         }
@@ -54,6 +56,9 @@ pipeline {
     stage('Initialize Configuration') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is not set. Cannot proceed with configuration."
+          }
           withEnv(env.ENV_LIST.split('\n')) {
             echo "✅ Configuration initialized:"
             echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
@@ -82,6 +87,9 @@ pipeline {
     stage('Pre-Run Debug') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is not set. Cannot proceed with Pre-Run Debug."
+          }
           withEnv(env.ENV_LIST.split('\n')) {
             echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
             echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
@@ -98,6 +106,9 @@ pipeline {
     stage('Run Container') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is not set. Cannot run container."
+          }
           withEnv(env.ENV_LIST.split('\n')) {
             new RunContainer(this)
               .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
@@ -109,6 +120,9 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is not set. Cannot run health check."
+          }
           withEnv(env.ENV_LIST.split('\n')) {
             new HealthCheck(this)
               .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
