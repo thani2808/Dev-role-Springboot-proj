@@ -70,8 +70,14 @@ pipeline {
     stage('Build Application') {
       steps {
         script {
-          new ApplicationBuilder(this)
-            .build(env.APP_TYPE, env.IMAGE_NAME)
+          echo "Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
+          def appBuilder = new ApplicationBuilder(this)
+
+          if (params.REPO_NAME && params.REPO_BRANCH) {
+            appBuilder.build(params.REPO_NAME, params.REPO_BRANCH)
+          } else {
+            error "❌ Repo or Branch name is missing"
+          }
         }
       }
     }
