@@ -27,14 +27,18 @@ pipeline {
         script {
           def envMap = new EnvironmentInitializer(this).initialize()
 
-          if (!envMap || envMap.isEmpty()) {
-            error "❌ ENV_LIST is not set by EnvironmentInitializer. Cannot proceed."
+          if (!envMap || !(envMap instanceof Map) || envMap.isEmpty()) {
+            error "❌ ENV_LIST is not set or invalid from EnvironmentInitializer. Cannot proceed."
           }
 
-          // Convert Map to List<String> like: ["KEY=VAL", ...]
           def envList = envMap.collect { k, v -> "${k}=${v}" }
 
-          env.ENV_LIST = envList.join('\n') // Store for withEnv
+          if (envList.isEmpty()) {
+            error "❌ Converted ENV_LIST is empty. Cannot proceed."
+          }
+
+          env.ENV_LIST = envList.join('\n')
+          echo "🔍 ENV_LIST:\n${env.ENV_LIST}"
         }
       }
     }
@@ -61,6 +65,10 @@ pipeline {
     stage('Initialize Configuration') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          }
+
           withEnv(env.ENV_LIST.split('\n')) {
             echo "✅ Configuration initialized:"
             echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
@@ -89,6 +97,10 @@ pipeline {
     stage('Pre-Run Debug') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          }
+
           withEnv(env.ENV_LIST.split('\n')) {
             echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
             echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
@@ -105,6 +117,10 @@ pipeline {
     stage('Run Container') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          }
+
           withEnv(env.ENV_LIST.split('\n')) {
             new RunContainer(this).run(
               env.CONTAINER_NAME,
@@ -121,6 +137,10 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          }
+
           withEnv(env.ENV_LIST.split('\n')) {
             new HealthCheck(this).check(
               env.HOST_PORT,
