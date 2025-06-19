@@ -25,11 +25,16 @@ pipeline {
     stage('Load Shared Logic & Env') {
       steps {
         script {
-          def envList = new EnvironmentInitializer(this).initialize()
-          if (!envList || envList.isEmpty()) {
-            error "❌ ENV_LIST is not set. Cannot proceed with configuration."
+          def envMap = new EnvironmentInitializer(this).initialize()
+
+          if (!envMap || envMap.isEmpty()) {
+            error "❌ ENV_LIST is not set by EnvironmentInitializer. Cannot proceed."
           }
-          env.ENV_LIST = envList.join('\n') // Safe storage for later use
+
+          // Convert Map to List<String> like: ["KEY=VAL", ...]
+          def envList = envMap.collect { k, v -> "${k}=${v}" }
+
+          env.ENV_LIST = envList.join('\n') // Store for withEnv
         }
       }
     }
@@ -59,8 +64,8 @@ pipeline {
           withEnv(env.ENV_LIST.split('\n')) {
             echo "✅ Configuration initialized:"
             echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
-            echo "➡️ HOST_PORT = '${env.HOST_PORT}'"
-            echo "➡️ APP_TYPE = '${env.APP_TYPE}'"
+            echo "➡️ HOST_PORT      = '${env.HOST_PORT}'"
+            echo "➡️ APP_TYPE       = '${env.APP_TYPE}'"
           }
         }
       }
