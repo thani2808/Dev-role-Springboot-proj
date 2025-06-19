@@ -26,11 +26,7 @@ pipeline {
       steps {
         script {
           def envList = new EnvironmentInitializer(this).initialize()
-          envList.each { envStr ->
-            def (k, v) = envStr.split('=')
-            env[k] = v // Optional local env setting
-          }
-          env.ENV_LIST = envList.join('\n') // For later withEnv usage
+          env.ENV_LIST = envList.join('\n') // Store for later withEnv use
         }
       }
     }
@@ -57,7 +53,14 @@ pipeline {
 
     stage('Initialize Configuration') {
       steps {
-        echo "✅ Configuration initialized: ${env.CONTAINER_NAME}, ${env.HOST_PORT}, ${env.APP_TYPE}"
+        script {
+          withEnv(env.ENV_LIST.split('\n')) {
+            echo "✅ Configuration initialized:"
+            echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
+            echo "➡️ HOST_PORT      = '${env.HOST_PORT}'"
+            echo "➡️ APP_TYPE       = '${env.APP_TYPE}'"
+          }
+        }
       }
     }
 
@@ -79,12 +82,14 @@ pipeline {
     stage('Pre-Run Debug') {
       steps {
         script {
-          echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
-          echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
-          echo "🔧 Pre-Run – env.CONTAINER_NAME = '${env.CONTAINER_NAME}'"
+          withEnv(env.ENV_LIST.split('\n')) {
+            echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
+            echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
+            echo "🔧 Pre-Run – env.CONTAINER_NAME = '${env.CONTAINER_NAME}'"
 
-          if (!env.APP_TYPE) {
-            error "❌ Pre-Run check failed: APP_TYPE still null!"
+            if (!env.APP_TYPE) {
+              error "❌ Pre-Run check failed: APP_TYPE still null!"
+            }
           }
         }
       }
