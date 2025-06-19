@@ -26,17 +26,7 @@ pipeline {
     stage('Load Shared Logic & Env') {
       steps {
         script {
-          def envLoader = new EnvLoader(this)
-          def envVars = envLoader.load()
-
-          env.APP_TYPE = envVars.APP_TYPE
-          env.IMAGE_NAME = envVars.IMAGE_NAME
-          env.CONTAINER_NAME = envVars.CONTAINER_NAME
-          env.HOST_PORT = envVars.HOST_PORT
-          env.DOCKER_PORT = envVars.DOCKER_PORT
-          env.DOCKERHUB_USERNAME = envVars.DOCKERHUB_USERNAME
-          env.GIT_CREDENTIALS_ID = envVars.GIT_CREDENTIALS_ID
-          env.GIT_URL = envVars.GIT_URL // Optional if used later
+          new EnvironmentInitializer(this).initialize()
         }
       }
     }
@@ -85,6 +75,10 @@ pipeline {
     stage('Run Container') {
       steps {
         script {
+          if (!env.APP_TYPE) {
+            error "❌ 'APP_TYPE' is null or not set. Cannot continue."
+          }
+
           new RunContainer(this)
             .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
         }
