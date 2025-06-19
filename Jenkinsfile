@@ -23,6 +23,14 @@ pipeline {
 
   stages {
 
+    stage('Startup Debug') {
+      steps {
+        echo "⚙️ Startup – params.REPO_NAME = '${params.REPO_NAME}'"
+        echo "⚙️ Startup – env.JOB_NAME     = '${env.JOB_NAME}'"
+        echo "⚙️ Startup – env.APP_TYPE     = '${env.APP_TYPE}'"
+      }
+    }
+
     stage('Load Shared Logic & Env') {
       steps {
         script {
@@ -60,7 +68,7 @@ pipeline {
     stage('Build Application') {
       steps {
         script {
-          echo "Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
+          echo "🔨 Building Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
           def appBuilder = new ApplicationBuilder(this)
 
           if (params.REPO_NAME && params.REPO_BRANCH) {
@@ -72,13 +80,23 @@ pipeline {
       }
     }
 
+    stage('Pre-Run Debug') {
+      steps {
+        script {
+          echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
+          echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
+          echo "🔧 Pre-Run – env.CONTAINER_NAME = '${env.CONTAINER_NAME}'"
+
+          if (!env.APP_TYPE) {
+            error "❌ Pre-Run check failed: APP_TYPE still null!"
+          }
+        }
+      }
+    }
+
     stage('Run Container') {
       steps {
         script {
-          if (!env.APP_TYPE) {
-            error "❌ 'APP_TYPE' is null or not set. Cannot continue."
-          }
-
           new RunContainer(this)
             .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
         }
