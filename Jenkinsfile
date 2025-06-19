@@ -82,13 +82,19 @@ pipeline {
     stage('Build Application') {
       steps {
         script {
-          echo "🔨 Building Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
-          def appBuilder = new ApplicationBuilder(this)
+          if (!env.ENV_LIST) {
+            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          }
 
-          if (params.REPO_NAME && params.REPO_BRANCH) {
-            appBuilder.build(params.REPO_NAME, params.REPO_BRANCH)
-          } else {
-            error "❌ Repo or Branch name is missing"
+          withEnv(env.ENV_LIST.split('\n')) {
+            echo "🔨 Building Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
+            def appBuilder = new ApplicationBuilder(this)
+
+            if (params.REPO_NAME && params.REPO_BRANCH) {
+              appBuilder.build(params.REPO_NAME, params.REPO_BRANCH)
+            } else {
+              error "❌ Repo or Branch name is missing"
+            }
           }
         }
       }
