@@ -10,15 +10,7 @@ pipeline {
   }
 
   environment {
-    DOCKERHUB_USERNAME = ''
-    GIT_CREDENTIALS_ID = ''
-    TARGET_REPO = ''
-    TARGET_BRANCH = ''
-    APP_TYPE = ''
-    IMAGE_NAME = ''
-    CONTAINER_NAME = ''
-    HOST_PORT = ''
-    DOCKER_PORT = ''
+    ENV_LIST = ''
   }
 
   stages {
@@ -27,14 +19,18 @@ pipeline {
       steps {
         echo "⚙️ Startup – params.REPO_NAME = '${params.REPO_NAME}'"
         echo "⚙️ Startup – env.JOB_NAME     = '${env.JOB_NAME}'"
-        echo "⚙️ Startup – env.APP_TYPE     = '${env.APP_TYPE}'"
       }
     }
 
     stage('Load Shared Logic & Env') {
       steps {
         script {
-          new EnvironmentInitializer(this).initialize()
+          def envList = new EnvironmentInitializer(this).initialize()
+          envList.each { envStr ->
+            def (k, v) = envStr.split('=')
+            env[k] = v // Optional local env setting
+          }
+          env.ENV_LIST = envList.join('\n') // For later withEnv usage
         }
       }
     }
@@ -97,8 +93,10 @@ pipeline {
     stage('Run Container') {
       steps {
         script {
-          new RunContainer(this)
-            .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
+          withEnv(env.ENV_LIST.split('\n')) {
+            new RunContainer(this)
+              .run(env.CONTAINER_NAME, env.IMAGE_NAME, env.HOST_PORT, env.DOCKER_PORT, env.APP_TYPE)
+          }
         }
       }
     }
@@ -106,8 +104,10 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
-          new HealthCheck(this)
-            .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
+          withEnv(env.ENV_LIST.split('\n')) {
+            new HealthCheck(this)
+              .check(env.HOST_PORT, env.CONTAINER_NAME, env.APP_TYPE)
+          }
         }
       }
     }
