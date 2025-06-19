@@ -9,10 +9,6 @@ pipeline {
     string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
   }
 
-  environment {
-    ENV_LIST = ''
-  }
-
   stages {
 
     stage('Startup Debug') {
@@ -22,23 +18,17 @@ pipeline {
       }
     }
 
-    stage('Load Shared Logic & Env') {
+    stage('Initialize Environment') {
       steps {
         script {
-          def envMap = new EnvironmentInitializer(this).initialize()
+          new InitEnv(this).initialize()
 
-          if (!envMap || !(envMap instanceof Map) || envMap.isEmpty()) {
-            error "❌ ENV_LIST is not set or invalid from EnvironmentInitializer. Cannot proceed."
-          }
-
-          def envList = envMap.collect { k, v -> "${k}=${v}" }
-
-          if (envList.isEmpty()) {
-            error "❌ Converted ENV_LIST is empty. Cannot proceed."
-          }
-
-          env.ENV_LIST = envList.join('\n')
-          echo "🔍 ENV_LIST:\n${env.ENV_LIST}"
+          echo "✅ Environment initialized:"
+          echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
+          echo "➡️ HOST_PORT      = '${env.HOST_PORT}'"
+          echo "➡️ APP_TYPE       = '${env.APP_TYPE}'"
+          echo "➡️ IMAGE_NAME     = '${env.IMAGE_NAME}'"
+          echo "➡️ DOCKER_PORT    = '${env.DOCKER_PORT}'"
         }
       }
     }
@@ -62,40 +52,16 @@ pipeline {
       }
     }
 
-    stage('Initialize Configuration') {
-      steps {
-        script {
-          if (!env.ENV_LIST) {
-            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
-          }
-
-          withEnv(env.ENV_LIST.split('\n')) {
-            echo "✅ Configuration initialized:"
-            echo "➡️ CONTAINER_NAME = '${env.CONTAINER_NAME}'"
-            echo "➡️ HOST_PORT      = '${env.HOST_PORT}'"
-            echo "➡️ APP_TYPE       = '${env.APP_TYPE}'"
-          }
-        }
-      }
-    }
-
     stage('Build Application') {
       steps {
         script {
-          if (!env.ENV_LIST) {
-            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
+          echo "🔨 Building Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
+
+          if (!params.REPO_NAME || !params.REPO_BRANCH) {
+            error "❌ Repo or Branch name is missing"
           }
 
-          withEnv(env.ENV_LIST.split('\n')) {
-            echo "🔨 Building Repo: ${params.REPO_NAME}, Branch: ${params.REPO_BRANCH}"
-            def appBuilder = new ApplicationBuilder(this)
-
-            if (params.REPO_NAME && params.REPO_BRANCH) {
-              appBuilder.build(params.REPO_NAME, params.REPO_BRANCH)
-            } else {
-              error "❌ Repo or Branch name is missing"
-            }
-          }
+          new ApplicationBuilder(this).build(params.REPO_NAME, params.REPO_BRANCH)
         }
       }
     }
@@ -103,19 +69,7 @@ pipeline {
     stage('Pre-Run Debug') {
       steps {
         script {
-          if (!env.ENV_LIST) {
-            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
-          }
-
-          withEnv(env.ENV_LIST.split('\n')) {
-            echo "🔧 Pre-Run – env.APP_TYPE       = '${env.APP_TYPE}'"
-            echo "🔧 Pre-Run – env.IMAGE_NAME     = '${env.IMAGE_NAME}'"
-            echo "🔧 Pre-Run – env.CONTAINER_NAME = '${env.CONTAINER_NAME}'"
-
-            if (!env.APP_TYPE) {
-              error "❌ Pre-Run check failed: APP_TYPE still null!"
-            }
-          }
+          new PreRunDebug(this).check()
         }
       }
     }
@@ -123,19 +77,13 @@ pipeline {
     stage('Run Container') {
       steps {
         script {
-          if (!env.ENV_LIST) {
-            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
-          }
-
-          withEnv(env.ENV_LIST.split('\n')) {
-            new RunContainer(this).run(
-              env.CONTAINER_NAME,
-              env.IMAGE_NAME,
-              env.HOST_PORT,
-              env.DOCKER_PORT,
-              env.APP_TYPE
-            )
-          }
+          new RunContainer(this).run(
+            env.CONTAINER_NAME,
+            env.IMAGE_NAME,
+            env.HOST_PORT,
+            env.DOCKER_PORT,
+            env.APP_TYPE
+          )
         }
       }
     }
@@ -143,17 +91,11 @@ pipeline {
     stage('Health Check') {
       steps {
         script {
-          if (!env.ENV_LIST) {
-            error "❌ ENV_LIST is missing before withEnv. Aborting stage."
-          }
-
-          withEnv(env.ENV_LIST.split('\n')) {
-            new HealthCheck(this).check(
-              env.HOST_PORT,
-              env.CONTAINER_NAME,
-              env.APP_TYPE
-            )
-          }
+          new HealthCheck(this).check(
+            env.HOST_PORT,
+            env.CONTAINER_NAME,
+            env.APP_TYPE
+          )
         }
       }
     }
