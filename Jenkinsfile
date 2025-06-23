@@ -1,4 +1,4 @@
-i@Library('common-repository-new@feature') _
+@Library('common-repository-new@feature') _
 import org.example.*
 
 pipeline {
