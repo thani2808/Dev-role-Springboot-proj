@@ -5,7 +5,7 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'REPO_NAME', defaultValue: '', description: 'GitHub Repo Name (auto-populated)')
+        string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'GitHub Repo Name (auto-populated)')
         string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout (auto-populated)')
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
