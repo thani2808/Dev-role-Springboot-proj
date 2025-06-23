@@ -2,92 +2,81 @@
 import org.example.*
 
 pipeline {
-  agent any
+    agent any
 
-  parameters {
-    string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'Repository Name to checkout')
-    string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
-  }
-
-  stages {
-
-    stage('Startup Debug') {
-      steps {
-        echo "⚙️ Startup – params.REPO_NAME = '${params.REPO_NAME}'"
-        echo "⚙️ Startup – env.JOB_NAME     = '${env.JOB_NAME}'"
-      }
+    parameters {
+        string(name: 'REPO_NAME', defaultValue: 'dan-p81', description: 'Repository Name to checkout')
+        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
+        choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
 
-    stage('Initialize Environment') {
-      steps {
-        script {
-          app = new ApplicationBuilder(this)
-          app.initialize()
+    environment {
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Initialize Environment') {
+            steps {
+                script {
+                    // ✅ Create ApplicationBuilder with `this`
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.initialize()
+                }
+            }
         }
-      }
-    }
 
-    stage('Clean Workspace') {
-      steps {
-        script {
-          app.cleanWorkspace()
+        stage('Checkout Repository') {
+            steps {
+                script {
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.checkout()
+                }
+            }
         }
-      }
-    }
 
-    stage('Checkout Repo') {
-      steps {
-        script {
-          app.checkout(params.REPO_BRANCH)
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.buildImage()
+                }
+            }
         }
-      }
-    }
 
-    stage('Build Application') {
-      steps {
-        script {
-          app.build(params.REPO_BRANCH)
+        stage('Run Container') {
+            steps {
+                script {
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.runContainer()
+                }
+            }
         }
-      }
-    }
 
-    stage('Pre-Run Debug') {
-      steps {
-        script {
-          app.preRunDebug()
+        stage('Health Check') {
+            steps {
+                script {
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.healthCheck()
+                }
+            }
         }
-      }
-    }
 
-    stage('Run Container') {
-      steps {
-        script {
-          app.runContainer()
+        stage('Post Build Report') {
+            steps {
+                script {
+                    def builder = new org.example.ApplicationBuilder(this)
+                    builder.sendBuildReport()
+                }
+            }
         }
-      }
     }
 
-    stage('Health Check') {
-      steps {
-        script {
-          app.healthCheck()
+    post {
+        always {
+            script {
+                def builder = new org.example.ApplicationBuilder(this)
+                builder.cleanWorkspace()
+            }
         }
-      }
     }
-
-    stage('Success') {
-      steps {
-        echo "🎉 Deployment successful for ${params.REPO_NAME} [${params.REPO_BRANCH}]"
-      }
-    }
-  }
-
-  post {
-    failure {
-      echo '❌ Deployment failed. Check logs.'
-    }
-    always {
-      echo '🎯 Pipeline execution completed.'
-    }
-  }
 }
