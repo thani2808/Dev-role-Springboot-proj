@@ -1,12 +1,14 @@
 @Library('common-repository-new@feature') _
+
 import org.example.*
 
 pipeline {
     agent any
 
     parameters {
-        string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'Repository Name to checkout')
-        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
+        // Dynamically filled REPO_NAME and REPO_BRANCH via Active Choices
+        string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'GitHub Repository Name')
+        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout (populated dynamically)')
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
 
@@ -18,8 +20,8 @@ pipeline {
         stage('Initialize Environment') {
             steps {
                 script {
-                    // ✅ Create ApplicationBuilder with `this`
-                    def builder = new org.example.ApplicationBuilder(this)
+                    // ✅ Initialize once and reuse
+                    builder = new ApplicationBuilder(this)
                     builder.initialize()
                 }
             }
@@ -28,7 +30,6 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 script {
-                    def builder = new org.example.ApplicationBuilder(this)
                     builder.checkout()
                 }
             }
@@ -37,7 +38,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def builder = new org.example.ApplicationBuilder(this)
                     builder.buildImage()
                 }
             }
@@ -46,7 +46,6 @@ pipeline {
         stage('Run Container') {
             steps {
                 script {
-                    def builder = new org.example.ApplicationBuilder(this)
                     builder.runContainer()
                 }
             }
@@ -55,7 +54,6 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
-                    def builder = new org.example.ApplicationBuilder(this)
                     builder.healthCheck()
                 }
             }
@@ -64,7 +62,6 @@ pipeline {
         stage('Post Build Report') {
             steps {
                 script {
-                    def builder = new org.example.ApplicationBuilder(this)
                     builder.sendBuildReport()
                 }
             }
@@ -74,7 +71,6 @@ pipeline {
     post {
         always {
             script {
-                def builder = new org.example.ApplicationBuilder(this)
                 builder.cleanWorkspace()
             }
         }
