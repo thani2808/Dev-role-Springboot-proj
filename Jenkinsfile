@@ -10,10 +10,6 @@ pipeline {
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
 
-    environment {
-        // optional global env vars
-    }
-
     stages {
         stage('Initialize Environment') {
             steps {
