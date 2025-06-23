@@ -1,24 +1,24 @@
-@Library('common-repository-new@feature') _
+i@Library('common-repository-new@feature') _
 import org.example.*
 
 pipeline {
     agent any
 
     parameters {
-        string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'Repository Name to checkout')
-        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout (auto-populated by Active Choices)')
+        string(name: 'REPO_NAME', defaultValue: '', description: 'GitHub Repo Name (auto-populated)')
+        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout (auto-populated)')
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
 
     environment {
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        // optional global env vars
     }
 
     stages {
         stage('Initialize Environment') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
+                    builder = new ApplicationBuilder(this)
                     builder.initialize()
                 }
             }
@@ -27,7 +27,6 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
                     builder.checkout(params.REPO_BRANCH)
                 }
             }
@@ -36,8 +35,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
-                    builder.buildApp(params.ENV, params.REPO_NAME, env.IMAGE_NAME)
+                    builder.build(params.REPO_BRANCH)
                 }
             }
         }
@@ -45,7 +43,6 @@ pipeline {
         stage('Run Container') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
                     builder.runContainer()
                 }
             }
@@ -54,7 +51,6 @@ pipeline {
         stage('Health Check') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
                     builder.healthCheck()
                 }
             }
@@ -63,8 +59,7 @@ pipeline {
         stage('Post Build Report') {
             steps {
                 script {
-                    def builder = new ApplicationBuilder(this)
-                    builder.sendBuildReport()
+                    echo "📄 Build report generated: build-report.txt"
                 }
             }
         }
@@ -73,7 +68,6 @@ pipeline {
     post {
         always {
             script {
-                def builder = new ApplicationBuilder(this)
                 builder.cleanWorkspace()
             }
         }
