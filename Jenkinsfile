@@ -5,7 +5,7 @@ pipeline {
   agent any
 
   parameters {
-    string(name: 'REPO_NAME', defaultValue: 'eureka-discovery-server', description: 'Repository Name to checkout')
+    string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'Repository Name to checkout')
     string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
   }
 
