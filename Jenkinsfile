@@ -2,78 +2,92 @@
 import org.example.*
 
 pipeline {
-    agent any
+  agent any
 
-    parameters {
-        string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'GitHub Repo Name (auto-populated)')
-        string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout (auto-populated)')
-        choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
+  parameters {
+    string(name: 'REPO_NAME', defaultValue: 'eureka-discovery-server', description: 'Repository Name to checkout')
+    string(name: 'REPO_BRANCH', defaultValue: 'feature', description: 'Branch to checkout')
+  }
+
+  stages {
+
+    stage('Startup Debug') {
+      steps {
+        echo "⚙️ Startup – params.REPO_NAME = '${params.REPO_NAME}'"
+        echo "⚙️ Startup – env.JOB_NAME     = '${env.JOB_NAME}'"
+      }
     }
 
-    environment {
-        // Optional: If you want to use these vars elsewhere in the pipeline
-        PROJECT_REPO = "${params.REPO_NAME}"
-        PROJECT_BRANCH = "${params.REPO_BRANCH}"
-        DEPLOY_ENV = "${params.ENV}"
+    stage('Initialize Environment') {
+      steps {
+        script {
+          app = new ApplicationBuilder(this)
+          app.initialize()
+        }
+      }
     }
 
-    stages {
-        stage('Initialize Environment') {
-            steps {
-                script {
-                    builder = new ApplicationBuilder(this)
-                    builder.initialize()
-                }
-            }
+    stage('Clean Workspace') {
+      steps {
+        script {
+          app.cleanWorkspace()
         }
-
-        stage('Checkout Repository') {
-            steps {
-                script {
-                    builder.checkout()
-                }
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    builder.build()
-                }
-            }
-        }
-
-        stage('Run Container') {
-            steps {
-                script {
-                    builder.runContainer()
-                }
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                script {
-                    builder.healthCheck()
-                }
-            }
-        }
-
-        stage('Post Build Report') {
-            steps {
-                script {
-                    echo "📄 Build report generated:"
-                    echo readFile("build-report.txt")
-                }
-            }
-        }
+      }
     }
 
-    post {
-        always {
-            script {
-                builder.cleanWorkspace()
-            }
+    stage('Checkout Repo') {
+      steps {
+        script {
+          app.checkout(params.REPO_BRANCH)
         }
+      }
     }
+
+    stage('Build Application') {
+      steps {
+        script {
+          app.build(params.REPO_BRANCH)
+        }
+      }
+    }
+
+    stage('Pre-Run Debug') {
+      steps {
+        script {
+          app.preRunDebug()
+        }
+      }
+    }
+
+    stage('Run Container') {
+      steps {
+        script {
+          app.runContainer()
+        }
+      }
+    }
+
+    stage('Health Check') {
+      steps {
+        script {
+          app.healthCheck()
+        }
+      }
+    }
+
+    stage('Success') {
+      steps {
+        echo "🎉 Deployment successful for ${params.REPO_NAME} [${params.REPO_BRANCH}]"
+      }
+    }
+  }
+
+  post {
+    failure {
+      echo '❌ Deployment failed. Check logs.'
+    }
+    always {
+      echo '🎯 Pipeline execution completed.'
+    }
+  }
 }
