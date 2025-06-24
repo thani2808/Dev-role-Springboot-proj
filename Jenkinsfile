@@ -10,6 +10,13 @@ pipeline {
         choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Deployment environment')
     }
 
+    environment {
+        // Optional: If you want to use these vars elsewhere in the pipeline
+        PROJECT_REPO = "${params.REPO_NAME}"
+        PROJECT_BRANCH = "${params.REPO_BRANCH}"
+        DEPLOY_ENV = "${params.ENV}"
+    }
+
     stages {
         stage('Initialize Environment') {
             steps {
@@ -23,7 +30,7 @@ pipeline {
         stage('Checkout Repository') {
             steps {
                 script {
-                    builder.checkout(params.REPO_BRANCH)
+                    builder.checkout()
                 }
             }
         }
@@ -31,7 +38,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    builder.build(params.REPO_BRANCH)
+                    builder.build()
                 }
             }
         }
@@ -55,7 +62,8 @@ pipeline {
         stage('Post Build Report') {
             steps {
                 script {
-                    echo "📄 Build report generated: build-report.txt"
+                    echo "📄 Build report generated:"
+                    echo readFile("build-report.txt")
                 }
             }
         }
