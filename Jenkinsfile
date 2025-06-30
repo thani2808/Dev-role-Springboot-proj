@@ -1,8 +1,12 @@
-@Library('common-repository-new@feature') _
+@Library('common-repository-new@feature') _ 
 import org.example.*
 
 pipeline {
   agent any
+
+  tools {
+    git 'Git'  // 👈 Refers to the Git tool name you configured in Jenkins
+  }
 
   parameters {
     string(name: 'REPO_NAME', defaultValue: 'Dev-role-Springboot-proj', description: 'Repository Name to checkout')
@@ -11,7 +15,6 @@ pipeline {
   }
 
   stages {
-
     stage('Startup Debug') {
       steps {
         echo "⚙️ Startup – params.REPO_NAME = '${params.REPO_NAME}'"
