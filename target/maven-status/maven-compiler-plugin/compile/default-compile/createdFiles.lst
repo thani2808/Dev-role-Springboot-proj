@@ -1,7 +1,0 @@
-com\vaibavshri\role\SecurityConfig.class
-com\vaibavshri\role\controller\RoleController.class
-com\vaibavshri\role\service\RoleService.class
-com\vaibavshri\role\controller\RoleController$GlobalExceptionHandler.class
-com\vaibavshri\role\RoleApplication.class
-com\vaibavshri\role\repository\RoleRepository.class
-com\vaibavshri\role\entity\Role.class
